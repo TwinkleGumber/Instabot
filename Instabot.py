@@ -3,7 +3,7 @@ from colored import fg, attr
 import requests, urllib                                        # Install requests library to make network requests and urllib to download images.
 from textblob import TextBlob
 from textblob.sentiments import NaiveBayesAnalyzer         # analyze the sentiments of the comment
-
+import matplotlib.pyplot as plt
 
 
 '''
@@ -117,30 +117,110 @@ def get_own_recent_post():
     check__code(d)
     if len(d['data']):
         download_image(d)
-        print '\nYour image has been downloaded!'
+        print (colored('\nYour image has been downloaded!', 'green'))
     else:
         print (colored('Post does not exist!' , 'red'))
 
 
 '''
->> Function declaration to get the recent post of a user by username ant it can accept any input parameter.
+>> Function declaration to get the post of a user for different purposes.
 >> The function will make use of the above created function to fetch the user's Id using the username.
 '''
 
-def get_user_recent_post(insta_username):
-    user_id = get_user_id(insta_username)
-    if user_id == None:
-        print (colored('User does not exist!','red'))
+max_like=[]
+min_like=[]
+max_comment=[]
+min_comment=[]
+Caption=[]
+
+
+
+def get_user_post(insta_username):
+    user_id=get_user_id(insta_username)
+    if user_id==None:
+        print (colored("User Doesn't exist. ",'red'))
     else:
-        request_url = (BASE_URL + 'users/%s/media/recent/?access_token=%s') % (user_id, AccessToken)
+        request_url = (BASE_URL +'users/%s/media/recent/?access_token=%s') % (user_id, AccessToken)
+        print "Get request url:" + request_url
         d = get_data_from_url(request_url)
         check__code(d)
         if len(d['data']):
-            download_image(d)
-            print (colored('\nYour image has been downloaded!','green'))
-        else:
-            print (colored('Post does not exist!', 'red'))
+            print "1.Post with max. likes.\n2.Post with least likes.\n3.Post with maximum comments.\n4.Post with minimum comments.\n5.Post by caption.\n6.Most recent post.\n"
+            choice = int(raw_input("Enter your choice."))
+            if choice == 1:
+                for x in d['data']:
+                    max_like.append(x['likes']['count'])
+                like_max = max(max_like)
+                index = max_like.index(like_max)
+                image_name = d['data'][index]['id'] + '.jpeg'
+                image_url = d['data'][index]['images']['standard_resolution']['url']
+                likes = str(d['data'][index]['likes']['count'])
+                urllib.urlretrieve(image_url, image_name)
+                print (colored('\nYour image has been downloaded!', 'green'))
+                print "likes:" + likes
 
+            elif choice == 2:
+                for x in d['data']:
+                    min_like.append(x['likes']['count'])
+                like_min = min(min_like)
+                index = min_like.index(like_min)
+                image_name = d['data'][index]['id'] + '.jpeg'
+                image_url = d['data'][index]['images']['standard_resolution']['url']
+                likes = str(d['data'][index]['likes']['count'])
+                urllib.urlretrieve(image_url, image_name)
+                print (colored('\nYour image has been downloaded!', 'green'))
+                print "likes:" + likes
+
+            elif choice == 3:
+                for x in d['data']:
+                    max_comment.append(x['comments']['count'])
+                comment_max = max(max_comment)
+                index = max_comment.index(comment_max)
+                image_name = d['data'][index]['id'] + '.jpeg'
+                image_url = d['data'][index]['images']['standard_resolution']['url']
+                comments = str(d['data'][index]['comments']['count'])
+                urllib.urlretrieve(image_url, image_name)
+                print (colored('\nYour image has been downloaded!', 'green'))
+                print "comments:" + comments
+
+            elif choice == 4:
+                for x in d['data']:
+                    min_comment.append(x['comments']['count'])
+                comment_min = min(min_comment)
+                index = min_comment.index(comment_min)
+                image_name = d['data'][index]['id'] + '.jpeg'
+                image_url = d['data'][index]['images']['standard_resolution']['url']
+                comments = str(d['data'][index]['comments']['count'])
+                urllib.urlretrieve(image_url, image_name)
+                print (colored('\nYour image has been downloaded!', 'green'))
+                print "comments:" + comments
+
+
+            elif choice == 5:
+                for x in d['data']:
+                    if x['caption']:
+                        Caption.append(x['caption']['text'])
+                    else:
+                        Caption.append('No caption')
+                enter_caption = raw_input("Enter caption:")
+                for caption in Caption:
+                    if enter_caption in caption:
+                        index = Caption.index(caption)
+                        image_name = d['data'][index]['id'] + '.jpeg'
+                        image_url = d['data'][index]['images']['standard_resolution']['url']
+                        urllib.urlretrieve(image_url, image_name)
+                        print (colored('\nYour image has been downloaded!', 'green'))
+                        print "Your Caption: " + caption
+                    else:
+                        print "Caption not found in any post."
+                        break
+
+
+            elif choice == 6:
+                download_image(d)
+                print (colored('\nYour image has been downloaded!', 'green'))
+        else:
+             print (colored("Post doesn't exist.",'red'))
 
 
 '''
@@ -320,6 +400,31 @@ def delete_negative_comment(insta_username):
     else:
         print (colored('There are no existing comments on the post!','cyan'))
 
+'''
+   Code to determine number of images shared with a particular hash tag and plot the same using malplotlib.
+'''
+def images_with_particular_hashtag():
+    counts = []
+    colors = ['yellowgreen','lightcoral','lightskyblue','yellow']
+    hashtags = ['instagood', 'fun','goodvibes','rain']                    # some of the particular hashtags
+    for e in hashtags:
+
+        request_url = (BASE_URL +  'tags/%s?access_token=%s') % (e , AccessToken)
+        d = get_data_from_url(request_url)
+        check__code(d)
+        if len(d['data']):
+            counts.append(int(d['data']['media_count']))
+        else:
+            print "No image is there with this hashtag"
+
+    plt.pie(counts,labels=hashtags,colors=colors,autopct='%1.1f%%', shadow=True, startangle=140)
+
+    plt.axis('equal')
+    plt.show()
+
+
+
+
 
 '''
 >> our application starts from here by providing you many choices
@@ -339,7 +444,7 @@ def start_bot():
         print "a. Get your own details"
         print "b. Get details of a user by username"
         print "c. Get your own recent post"
-        print "d. Get the recent post of a user by username"
+        print "d. Get the post of a user for different purposes."
         print "e. Get any post of the user by its image number"
         print "f. Get a list of people who have liked the recent post of a user"
         print "g. Like the recent post of a user"
@@ -347,7 +452,8 @@ def start_bot():
         print "i. Get a list of comments on the recent post of a user"
         print "j. Make a comment on the recent post of a user"
         print "k. Delete negative comments from the recent post of a user"
-        print "l. Exit"
+        print "l. Get the plot of number of images with a particular hashtag"
+        print "m. Exit"
 
         choice = raw_input("\nEnter your choice: ")
         if choice == "a":
@@ -362,7 +468,7 @@ def start_bot():
 
         elif choice == "d":
             insta_username = raw_input("Enter the username of the user: ")
-            get_user_recent_post(insta_username)
+            get_user_post(insta_username)
 
         elif choice == "e":
             insta_username = raw_input("Enter the username of the user: ")
@@ -379,19 +485,22 @@ def start_bot():
         elif choice == "h":
             get_recently_liked_media()
 
-        elif choice=="i":
+        elif choice == "i":
            insta_username = raw_input("Enter the username of the user: ")
            list_of_comments(insta_username)
 
-        elif choice=="j":
+        elif choice == "j":
            insta_username = raw_input("Enter the username of the user: ")
            post_a_comment(insta_username)
 
-        elif choice=="k":
+        elif choice == "k":
            insta_username = raw_input("Enter the username of the user: ")
            delete_negative_comment(insta_username)
 
         elif choice == "l":
+            images_with_particular_hashtag()
+
+        elif choice == "m":
             exit()
 
         else:                                               # message popup if user selects wrong option.
